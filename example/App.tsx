@@ -1,73 +1,155 @@
-import { useEvent } from 'expo';
-import ExpoSpeechTranscriber, { ExpoSpeechTranscriberView } from 'expo-speech-transcriber';
-import { Button, SafeAreaView, ScrollView, Text, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+  useAudioRecorder,
+  AudioModule,
+  RecordingPresets,
+  setAudioModeAsync,
+  useAudioRecorderState,
+} from 'expo-audio';
+import { Ionicons } from '@expo/vector-icons';
+import * as SpeechTranscriber from "expo-speech-transcriber"
 
-export default function App() {
-  const onChangePayload = useEvent(ExpoSpeechTranscriber, 'onChange');
+const App = () => {
+  const [transcription, setTranscription] = useState('');
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
+  const recorderState = useAudioRecorderState(audioRecorder);
+
+  useEffect(() => {
+    (async () => {
+      const status = await AudioModule.requestRecordingPermissionsAsync();
+      if (!status.granted) {
+        Alert.alert('Permission denied', 'Microphone access is required.');
+      }
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        allowsRecording: true,
+      });
+    })();
+  }, []);
+
+  const startRecording = async () => {
+    try {
+      await audioRecorder.prepareToRecordAsync();
+      audioRecorder.record();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to start recording.');
+    }
+  };
+
+  const stopRecordingAndTranscribe = async () => {
+    try {
+      setTranscription('Transcribing...');
+      await audioRecorder.stop();
+      const uri = audioRecorder.uri;
+      // Simulate transcription (replace with actual API call or library)
+      const result =  await SpeechTranscriber.transcribeAudio(uri || "")
+        setTranscription(result || "");
+    } catch (error) {
+      Alert.alert('Error', 'Failed to stop recording.');
+    }
+  };
+
+  const handleRecordPress = async () => {
+    if (recorderState?.isRecording) {
+      await stopRecordingAndTranscribe();
+    } else {
+      await startRecording();
+    }
+  };
+
+  const isRecording = recorderState?.isRecording ?? false;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.container}>
-        <Text style={styles.header}>Module API Example</Text>
-        <Group name="Constants">
-          <Text>{ExpoSpeechTranscriber.PI}</Text>
-        </Group>
-        <Group name="Functions">
-          <Text>{ExpoSpeechTranscriber.hello()}</Text>
-        </Group>
-        <Group name="Async functions">
-          <Button
-            title="Set value"
-            onPress={async () => {
-              await ExpoSpeechTranscriber.setValueAsync('Hello from JS!');
-            }}
-          />
-        </Group>
-        <Group name="Events">
-          <Text>{onChangePayload?.value}</Text>
-        </Group>
-        <Group name="Views">
-          <ExpoSpeechTranscriberView
-            url="https://www.example.com"
-            onLoad={({ nativeEvent: { url } }) => console.log(`Loaded: ${url}`)}
-            style={styles.view}
-          />
-        </Group>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-function Group(props: { name: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.group}>
-      <Text style={styles.groupHeader}>{props.name}</Text>
-      {props.children}
+    <View style={styles.container}>
+      <Text style={styles.title}>Speech Transcriber</Text>
+      <TouchableOpacity
+        onPress={handleRecordPress}
+        style={[styles.button, isRecording && styles.recordingButton]}
+      >
+        <Ionicons
+          name={isRecording ? 'mic' : 'mic-outline'}
+          size={28}
+          color="#FFF"
+        />
+        <Text style={styles.buttonText}>
+          {isRecording ? 'Stop & Transcribe' : 'Start Recording'}
+        </Text>
+      </TouchableOpacity>
+      <Text style={styles.statusText}>
+        {isRecording
+          ? `Recording... ${recorderState?.durationMillis ?? 0}ms`
+          : 'Tap to start recording'}
+      </Text>
+      {transcription ? (
+        <View style={styles.transcriptionContainer}>
+          <Text style={styles.transcriptionTitle}>Transcription:</Text>
+          <Text style={styles.transcriptionText}>{transcription}</Text>
+        </View>
+      ) : null}
     </View>
   );
-}
+};
 
-const styles = {
-  header: {
-    fontSize: 30,
-    margin: 20,
-  },
-  groupHeader: {
-    fontSize: 20,
-    marginBottom: 20,
-  },
-  group: {
-    margin: 20,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-  },
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#eee',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f5f5f5',
   },
-  view: {
-    flex: 1,
-    height: 200,
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 30,
+    color: '#333',
   },
-};
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007bff',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    marginVertical: 10,
+  },
+  recordingButton: {
+    backgroundColor: '#dc3545',
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 10,
+  },
+  statusText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 10,
+  },
+  transcriptionContainer: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    width: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  transcriptionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
+  transcriptionText: {
+    fontSize: 16,
+    color: '#666',
+  },
+});
+
+export default App;
