@@ -60,7 +60,7 @@ public class ExpoSpeechTranscriberModule: Module {
     }
     Function("isAnalyzerAvailable") { () -> Bool in
       if #available(iOS 26.0, *) {
-          return SpeechAnalyzer.isAvailable
+        return true
       }
       return false
     }
