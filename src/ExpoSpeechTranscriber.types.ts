@@ -9,6 +9,7 @@ export type TranscriptionProgressPayload = {
   isFinal: boolean;
 };
 
+
 export type TranscriptionErrorPayload = {
   error: string;
 };

@@ -4,7 +4,8 @@ import type {
 } from './ExpoSpeechTranscriber.types';
 
 declare class ExpoSpeechTranscriberNative extends NativeModule<ExpoSpeechTranscriberModuleEvents> {
-  transcribeAudioBuffer(audioData: Float32Array, sampleRate: number, channels: number): Promise<string>;
+  recordRealTimeAndTranscribe(): Promise<void>;
+  stopListening(): void;
   transcribeAudioWithSFRecognizer(audioFilePath: string): Promise<string>;
   transcribeAudioWithAnalyzer(audioFilePath: string): Promise<string>;
   requestPermissions(): Promise<string>;
