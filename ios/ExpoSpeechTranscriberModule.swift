@@ -54,10 +54,20 @@ public class ExpoSpeechTranscriberModule: Module {
     AsyncFunction("requestPermissions") { () async -> String in
       return await self.requestTranscribePermissions()
     }
+    
+    AsyncFunction("requestMicrophonePermissions") { () async -> String in
+      return await self.requestMicrophonePermissions()
+    }
+      
       
     Function("stopListening"){ () -> Void in
           return self.stopListening()
     }
+      
+    Function("isRecording") { () -> Bool in
+          return self.isRecording()
+    }
+      
     Function("isAnalyzerAvailable") { () -> Bool in
       if #available(iOS 26.0, *) {
         return true
@@ -126,7 +136,11 @@ public class ExpoSpeechTranscriberModule: Module {
         recognitionTask?.cancel()
         recognitionTask = nil
   }
-
+    
+    
+    private func isRecording() -> Bool {
+        return audioEngine.isRunning
+    }
 
     
   
@@ -270,6 +284,15 @@ public class ExpoSpeechTranscriberModule: Module {
         @unknown default:
           result = "unknown"
         }
+        continuation.resume(returning: result)
+      }
+    }
+  }
+  
+  private func requestMicrophonePermissions() async -> String {
+    return await withCheckedContinuation { continuation in
+      AVAudioSession.sharedInstance().requestRecordPermission { granted in
+        let result = granted ? "granted" : "denied"
         continuation.resume(returning: result)
       }
     }

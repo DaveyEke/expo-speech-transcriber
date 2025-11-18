@@ -9,6 +9,8 @@ declare class ExpoSpeechTranscriberNative extends NativeModule<ExpoSpeechTranscr
   transcribeAudioWithSFRecognizer(audioFilePath: string): Promise<string>;
   transcribeAudioWithAnalyzer(audioFilePath: string): Promise<string>;
   requestPermissions(): Promise<string>;
+  requestMicrophonePermissions(): Promise<string>;
+  isRecording(): boolean;
   isAnalyzerAvailable(): boolean;
 }
 

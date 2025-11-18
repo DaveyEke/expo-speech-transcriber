@@ -29,9 +29,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-audio",
-      "../app.plugin.js",
-      "react-native-audio-api"
+      "../app.plugin.js"
     ]
   }
 }

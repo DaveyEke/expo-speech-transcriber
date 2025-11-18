@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, Button } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as SpeechTranscriber from 'expo-speech-transcriber';
-import { useAudioRecorder, RecordingPresets, AudioModule, setAudioModeAsync, useAudioRecorderState } from 'expo-audio';
+import { useAudioRecorder, RecordingPresets, setAudioModeAsync, useAudioRecorderState } from 'expo-audio';
 
 const App = () => {
-  const { text, isFinal, error } = SpeechTranscriber.useRealTimeTranscription();
-  const [isTranscribing, setIsTranscribing] = useState(false);
+  const { text, isFinal, error, isRecording } = SpeechTranscriber.useRealTimeTranscription();
   const [recordedUri, setRecordedUri] = useState<string | null>(null);
   const [sfTranscription, setSfTranscription] = useState<string>('');
   const [analyzerTranscription, setAnalyzerTranscription] = useState<string>('');
@@ -17,15 +16,15 @@ const App = () => {
 
   useEffect(() => {
     if (isFinal) {
-      setIsTranscribing(false);
+      // Optionally handle final transcription
     }
   }, [isFinal]);
 
   const requestAllPermissions = async () => {
     try {
       const speechPermission = await SpeechTranscriber.requestPermissions();
-      const recordingPermission = await AudioModule.requestRecordingPermissionsAsync();
-      if (speechPermission === 'authorized' && recordingPermission.granted) {
+      const micPermission = await SpeechTranscriber.requestMicrophonePermissions();
+      if (speechPermission === 'authorized' && micPermission === 'granted') {
         // Set audio mode for recording
         await setAudioModeAsync({
           playsInSilentMode: true,
@@ -34,7 +33,7 @@ const App = () => {
         setPermissionsGranted(true);
         Alert.alert('Permissions Granted', 'All permissions are now available.');
       } else {
-        Alert.alert('Permissions Required', 'Speech and recording permissions are needed.');
+        Alert.alert('Permissions Required', 'Speech and microphone permissions are needed.');
       }
     } catch (err) {
       Alert.alert('Error', 'Failed to request permissions');
@@ -47,17 +46,14 @@ const App = () => {
       return;
     }
     try {
-      setIsTranscribing(true);
       await SpeechTranscriber.recordRealTimeAndTranscribe();
     } catch (err) {
       Alert.alert('Error', 'Failed to start transcription');
-      setIsTranscribing(false);
     }
   };
 
   const handleStopTranscription = () => {
     SpeechTranscriber.stopListening();
-    setIsTranscribing(false);
   };
 
   const startRecording = async () => {
@@ -129,8 +125,8 @@ const App = () => {
       <Text style={styles.sectionTitle}>Realtime Transcription</Text>
       <TouchableOpacity
         onPress={handleStartTranscription}
-        disabled={isTranscribing}
-        style={[styles.button, styles.recordButton, isTranscribing && styles.disabled]}
+        disabled={isRecording}
+        style={[styles.button, styles.recordButton, isRecording && styles.disabled]}
       >
         <Ionicons name="mic" size={24} color="#FFF" />
         <Text style={styles.buttonText}>Start Realtime Transcription</Text>
@@ -138,17 +134,17 @@ const App = () => {
 
       <TouchableOpacity
         onPress={handleStopTranscription}
-        disabled={!isTranscribing}
-        style={[styles.button, styles.stopButton, !isTranscribing && styles.disabled]}
+        disabled={!isRecording}
+        style={[styles.button, styles.stopButton, !isRecording && styles.disabled]}
       >
         <Ionicons name="stop-circle" size={24} color="#FFF" />
         <Text style={styles.buttonText}>Stop Realtime Transcription</Text>
       </TouchableOpacity>
 
-      {isTranscribing && (
+      {isRecording && (
         <View style={styles.recordingIndicator}>
           <Ionicons name="radio-button-on" size={20} color="#dc3545" />
-          <Text style={styles.recordingText}>Transcribing...</Text>
+          <Text style={styles.recordingText}>Recording and Transcribing...</Text>
         </View>
       )}
 
@@ -214,7 +210,7 @@ const App = () => {
         </>
       )}
 
-      {!isTranscribing && !text && !recordedUri && (
+      {!isRecording && !text && !recordedUri && (
         <Text style={styles.hintText}>
           Request permissions, then try realtime transcription or record audio for file transcription.
         </Text>

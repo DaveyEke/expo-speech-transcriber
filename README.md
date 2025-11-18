@@ -8,7 +8,8 @@ On-device speech transcription for Expo apps using Apple's Speech framework.
 - 🚀 Two APIs - Legacy SFSpeechRecognizer (iOS 13+) and SpeechAnalyzer (iOS 26+)
 - 📦 Easy integration - Auto-configures permissions
 - 🔒 Secure - All processing happens on device
-- ⚡ Realtime transcription - Get live speech-to-text updates
+- ⚡ Realtime transcription - Get live speech-to-text updates with built-in audio capture
+- 📁 File transcription - Transcribe pre-recorded audio files
 
 ## Installation
 
@@ -31,7 +32,7 @@ Add the plugin to your `app.json`:
 
 ### Custom permission message (recommended):
 
-Apple requires a clear purpose string for speech recognition permissions. Without it, your app may be rejected during App Store review. Provide a descriptive message explaining why your app needs access.
+Apple requires a clear purpose string for speech recognition and microphone permissions. Without it, your app may be rejected during App Store review. Provide a descriptive message explaining why your app needs access.
 
 ```json
 {
@@ -41,7 +42,8 @@ Apple requires a clear purpose string for speech recognition permissions. Withou
       [
         "expo-speech-transcriber",
         {
-          "speechRecognitionPermission": "We need speech recognition to transcribe your recordings"
+          "speechRecognitionPermission": "We need speech recognition to transcribe your recordings",
+          "microphonePermission": "We need microphone access to record audio for transcription"
         }
       ]
     ]
@@ -61,14 +63,15 @@ Start transcribing speech in real-time. This does not require `expo-audio`.
 import * as SpeechTranscriber from 'expo-speech-transcriber';
 
 // Request permissions
-const permission = await SpeechTranscriber.requestPermissions();
-if (permission !== 'authorized') {
-  console.log('Permission denied');
+const speechPermission = await SpeechTranscriber.requestPermissions();
+const micPermission = await SpeechTranscriber.requestMicrophonePermissions();
+if (speechPermission !== 'authorized' || micPermission !== 'granted') {
+  console.log('Permissions denied');
   return;
 }
 
 // Use the hook for realtime updates
-const { text, isFinal, error } = SpeechTranscriber.useRealTimeTranscription();
+const { text, isFinal, error, isRecording } = SpeechTranscriber.useRealTimeTranscription();
 
 // Start transcription
 await SpeechTranscriber.recordRealTimeAndTranscribe();
@@ -79,13 +82,13 @@ SpeechTranscriber.stopListening();
 
 ### File Transcription
 
-Transcribe pre-recorded audio files. This requires `expo-audio` to obtain audio URIs.
+Transcribe pre-recorded audio files. Our library handles transcription but not recording—use `expo-audio` to record audio (see [expo-audio documentation](https://docs.expo.dev/versions/latest/sdk/audio/)), or implement your own recording logic with microphone access via `requestMicrophonePermissions()`.
 
 ```typescript
 import * as SpeechTranscriber from 'expo-speech-transcriber';
 import { useAudioRecorder, RecordingPresets } from 'expo-audio';
 
-// Record audio
+// Record audio with expo-audio
 const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
 await audioRecorder.prepareToRecordAsync();
 audioRecorder.record();
@@ -104,6 +107,15 @@ if (SpeechTranscriber.isAnalyzerAvailable()) {
 }
 ```
 
+For custom recording without `expo-audio`:
+
+```typescript
+// Request microphone permission for your custom recording implementation
+const micPermission = await SpeechTranscriber.requestMicrophonePermissions();
+// Implement your own audio recording logic here to save a file
+// Then transcribe the resulting audio file URI
+```
+
 ## API Reference
 
 ### `requestPermissions()`
@@ -114,6 +126,16 @@ Request speech recognition permission.
 **Example:**
 ```typescript
 const status = await SpeechTranscriber.requestPermissions();
+```
+
+### `requestMicrophonePermissions()`
+Request microphone permission.
+
+**Returns:** `Promise<string>` - `"granted"` or `"denied"`
+
+**Example:**
+```typescript
+const status = await SpeechTranscriber.requestMicrophonePermissions();
 ```
 
 ### `recordRealTimeAndTranscribe()`
@@ -136,10 +158,20 @@ Stop real-time transcription.
 SpeechTranscriber.stopListening();
 ```
 
-### `transcribeAudioWithSFRecognizer(audioFilePath: string)`
-Transcribe audio from a file using SFSpeechRecognizer. I prefer this API for its reliability.
+### `isRecording()`
+Check if real-time transcription is currently recording.
 
-**Requires:** iOS 13+, audio file URI (use `expo-audio` to record)
+**Returns:** `boolean`
+
+**Example:**
+```typescript
+const recording = SpeechTranscriber.isRecording();
+```
+
+### `transcribeAudioWithSFRecognizer(audioFilePath: string)`
+Transcribe audio from a pre-recorded file using SFSpeechRecognizer. I prefer this API for its reliability.
+
+**Requires:** iOS 13+, pre-recorded audio file URI (record with `expo-audio` or your own implementation)
 
 **Returns:** `Promise<string>` - Transcribed text
 
@@ -149,9 +181,9 @@ const transcription = await SpeechTranscriber.transcribeAudioWithSFRecognizer('f
 ```
 
 ### `transcribeAudioWithAnalyzer(audioFilePath: string)`
-Transcribe audio from a file using SpeechAnalyzer.
+Transcribe audio from a pre-recorded file using SpeechAnalyzer.
 
-**Requires:** iOS 26+, audio file URI (use `expo-audio` to record)
+**Requires:** iOS 26+, pre-recorded audio file URI (record with `expo-audio` or your own implementation)
 
 **Returns:** `Promise<string>` - Transcribed text
 
@@ -175,11 +207,11 @@ if (SpeechTranscriber.isAnalyzerAvailable()) {
 ### `useRealTimeTranscription()`
 React hook for real-time transcription state.
 
-**Returns:** `{ text: string, isFinal: boolean, error: string | null }`
+**Returns:** `{ text: string, isFinal: boolean, error: string | null, isRecording: boolean }`
 
 **Example:**
 ```typescript
-const { text, isFinal, error } = SpeechTranscriber.useRealTimeTranscription();
+const { text, isFinal, error, isRecording } = SpeechTranscriber.useRealTimeTranscription();
 ```
 
 ## Example
@@ -197,7 +229,7 @@ See the [example app](./example) for a complete implementation demonstrating all
 - **iOS only** - Android not supported (Speech framework is Apple-only)
 - **English only** - Currently hardcoded to `en_US` locale
 - **File size** - Best for short recordings (< 1 minute)
-- **expo-audio required for file transcription** - Realtime transcription works without it
+- **Recording not included** - Real-time transcription captures audio internally; file transcription requires pre-recorded audio files (use `expo-audio` or implement your own recording with `requestMicrophonePermissions()`)
 
 ## License
 

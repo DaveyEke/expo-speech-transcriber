@@ -30,6 +30,14 @@ export function requestPermissions(): Promise<string> {
   return ExpoSpeechTranscriberModule.requestPermissions();
 }
 
+export function requestMicrophonePermissions(): Promise<string> {
+  return ExpoSpeechTranscriberModule.requestMicrophonePermissions();
+}
+
+export function isRecording(): boolean {
+  return ExpoSpeechTranscriberModule.isRecording();
+}
+
 export function isAnalyzerAvailable(): boolean {
   return ExpoSpeechTranscriberModule.isAnalyzerAvailable();
 }
@@ -38,6 +46,7 @@ export function useRealTimeTranscription() {
   const [text, setText] = useState('');
   const [isFinal, setIsFinal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
 
   useEffect(() => {
     const progressListener = ExpoSpeechTranscriberModule.addListener('onTranscriptionProgress', (payload: TranscriptionProgressPayload) => {
@@ -49,11 +58,17 @@ export function useRealTimeTranscription() {
       setError(payload.error);
     });
 
+    const interval = setInterval(() => {
+      const newIsRecording = ExpoSpeechTranscriberModule.isRecording();
+      setIsRecording(prev => (prev !== newIsRecording ? newIsRecording : prev));
+    }, 500);
+
     return () => {
+      clearInterval(interval);
       progressListener.remove();
       errorListener.remove();
     };
   }, []);
 
-  return { text, isFinal, error };
+  return { text, isFinal, error, isRecording };
 }
