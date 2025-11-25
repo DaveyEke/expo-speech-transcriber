@@ -121,7 +121,7 @@ const micPermission = await SpeechTranscriber.requestMicrophonePermissions();
 ### `requestPermissions()`
 Request speech recognition permission.
 
-**Returns:** `Promise<string>` - `"authorized"`, `"denied"`, `"restricted"`, or `"notDetermined"`
+**Returns:** `Promise<PermissionTypes>` - One of: `'authorized'`, `'denied'`, `'restricted'`, or `'notDetermined'`
 
 **Example:**
 ```typescript
@@ -131,7 +131,7 @@ const status = await SpeechTranscriber.requestPermissions();
 ### `requestMicrophonePermissions()`
 Request microphone permission.
 
-**Returns:** `Promise<string>` - `"granted"` or `"denied"`
+**Returns:** `Promise<MicrophonePermissionTypes>` - One of: `'granted'` or `'denied'`
 
 **Example:**
 ```typescript
