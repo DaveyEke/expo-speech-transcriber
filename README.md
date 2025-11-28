@@ -145,7 +145,6 @@ recorder.onAudioReady(({ buffer }) => {
   SpeechTranscriber.realtimeBufferTranscribe(
     channelData, // Float32Array or number[]
     16000, // sample rate
-    1 // channels (mono)
   );
 });
 
@@ -301,7 +300,7 @@ Stream audio buffers for real-time transcription. Ideal for integration with aud
 
 ```typescript
 const audioBuffer = new Float32Array([...]);
-await SpeechTranscriber.realtimeBufferTranscribe(audioBuffer, 16000, 1);
+await SpeechTranscriber.realtimeBufferTranscribe(audioBuffer, 16000);
 ```
 
 ### `stopBufferTranscription()`
