@@ -79,7 +79,7 @@ export function useRealTimeTranscription() {
     const interval = setInterval(() => {
       const newIsRecording = ExpoSpeechTranscriberModule.isRecording();
       setIsRecording(prev => (prev !== newIsRecording ? newIsRecording : prev));
-    }, 500);
+    }, 100);
 
     return () => {
       clearInterval(interval);
@@ -90,10 +90,12 @@ export function useRealTimeTranscription() {
 
 
     useEffect(() => {
-      if (!isRecording) {
+      if (isRecording) {
         setText('');
+        setIsFinal(false);
+        setError(null);
       }
-    },[isRecording])
+    }, [isRecording]);
 
   return { text, isFinal, error, isRecording };
 }
