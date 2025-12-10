@@ -1,6 +1,6 @@
 {
   "name": "expo-speech-transcriber",
-  "version": "0.1.6",
+  "version": "0.1.9",
   "description": "An iOS only on-device transcription library for React Native and Expo apps.",
   "main": "build/index.js",
   "types": "build/index.d.ts",
